@@ -8,6 +8,7 @@ public class OopsBackendApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(OopsBackendApplication.class, args);
+		
 	}
 
 }
