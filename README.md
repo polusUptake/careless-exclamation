@@ -1,2 +1,3 @@
-# careless-exclamation
-OOPS Mini Project:NBA Course File Generator with Overall CO Attainment
+
+## OOPS Mini Project
+#NBA Course File Generator with Overall CO Attainment
