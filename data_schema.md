@@ -1,6 +1,5 @@
 flowchart TD
-    A[Christmas] -->|Get money| B(Go shopping)
-    B --> C{Let me think}
-    C -->|One| D[Laptop]
-    C -->|Two| E[iPhone]
-    C -->|Three| F[fa:fa-car Car]
+    A[Enter Details] -->|Get Name,\n Dept,\n Program,\n Course | B{All details \nentered?}
+    B -->|Details missing| A
+    B -->|Yes|C[Dashboard]
+    
