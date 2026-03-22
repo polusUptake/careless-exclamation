@@ -7,11 +7,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
-
+@RestController
 public class OopsBackendApplication {
 
  public static void main(String[] args) {
-      SpringApplication.run(DemoApplication.class, args);
+      SpringApplication.run(OopsBackendApplication.class, args);
     }
     @GetMapping("/hello")
     public String hello(@RequestParam(value = "name", defaultValue = "World") String name) {
