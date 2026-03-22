@@ -18,6 +18,7 @@
 
 		<div class="controls-row" role="group">
 			<p>Name Of Instructor : Dr. Amrita Naik</p>
+			<p>Dept : Computer Engineering</p>
             <p>Program: Bachelor of Engineering - </p>
 			<select>
 				<option value="" selected disabled>Select option</option>
