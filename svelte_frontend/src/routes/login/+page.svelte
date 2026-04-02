@@ -1,3 +1,40 @@
+<script lang="ts">
+	let username = '';
+	let password = '';
+	let errorMessage = '';
+
+	async function handleLogin(event: SubmitEvent) {
+		event.preventDefault();
+		errorMessage = '';
+
+		try {
+			const response = await fetch('http://localhost:8080/api/login', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ username, password })
+			});
+
+			if (!response.ok) {
+				errorMessage = 'Login request failed';
+				return;
+			}
+
+			const data = await response.json();
+
+			if (data.success) {
+				window.location.href = '/dash';
+				return;
+			}
+
+			errorMessage = 'Invalid username or password';
+		} catch {
+			errorMessage = 'Could not connect to backend';
+		}
+	}
+</script>
+
 <svelte:head>
 	<title>Login</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -15,13 +52,14 @@
 		<h1 id="login-title">Welcome</h1>
 		<p class="subtitle">Enter username and password</p>
 
-		<form class="login-form" action="/dash">
+		<form class="login-form" on:submit={handleLogin}>
 			<div class="field-group">
 				<label for="username">Username</label>
 				<input
 					id="username"
 					name="username"
 					type="text"
+					bind:value={username}
 					required
 				/>
 			</div>
@@ -32,11 +70,15 @@
 					id="password"
 					name="password"
 					type="password"
+					bind:value={password}
 					required
 				/>
 			</div>
 
 			<button type="submit">Log In</button>
+			{#if errorMessage}
+				<p class="error-message">{errorMessage}</p>
+			{/if}
 		</form>
 	</section>
 </main>
@@ -156,6 +198,12 @@
 		background: var(--blue-500);
 		box-shadow: 0 10px 22px rgba(20, 41, 90, 0.45);
 		filter: saturate(1.05);
+	}
+
+	.error-message {
+		margin: 0.35rem 0 0;
+		color: #ffb4b4;
+		font-size: 0.9rem;
 	}
 
 
