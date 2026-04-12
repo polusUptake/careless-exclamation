@@ -1,3 +1,9 @@
+<script lang="ts">
+	function handleLogout() {
+		window.location.href = '/login';
+	}
+</script>
+
 <svelte:head>
 	<title>Dashboard</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -6,31 +12,18 @@
 		href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@400;500;600;700&display=swap"
 		rel="stylesheet"
 	/>
-	<link
-		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,500,0,0"
-		rel="stylesheet"
-	/>
 </svelte:head>
 
 <main class="dash-page">
 	<section class="card">
-		<h1 id="dash-title">Create Course File</h1>
+		<div class="title-row">
+			<h1 id="dash-title">Create Course File</h1>
+			<button type="button" class="logout-button" on:click={handleLogout}>Log Out</button>
+		</div>
 
 		<div class="controls-row" role="group">
 			<p>Name Of Instructor : Dr. Amrita Naik</p>
 			<p>Dept : Computer Engineering</p>
-            <p>Program: Bachelor of Engineering - </p>
-			<select>
-				<option value="" selected disabled>Select option</option>
-				<option value="placeholder-1">FE SEM 1</option>
-				<option value="placeholder-2">FE SEM 2</option>
-				<option value="placeholder-3">SE SEM 3</option>
-                <option value="placeholder-4">SE SEM 4</option>
-                <option value="placeholder-5">TE SEM 5</option>
-                <option value="placeholder-6">TE SEM 6</option>
-                <option value="placeholder-7">BE SEM 7</option>
-                <option value="placeholder-8">BE SEM 8</option>
-			</select>
 
             <p>Course:</p>
 			<select>
@@ -50,12 +43,21 @@
 			</select>
 		</div>
 
-		<div class="actions-row">
-			<button type="button" class="import-button">
-				<span class="material-symbols-outlined">add</span>
-				<span>Import Excel Files</span>
-			</button>
+	</section>
 
+	<section class="display-box">
+		<h1 class="display-title">Import files</h1>
+		<div class="text-boxes">
+			<button type="button" class="text-box">Internal Test 1</button>
+			<button type="button" class="text-box">Internal Test 2</button>
+			<button type="button" class="text-box">Internal Test 3</button>
+			<button type="button" class="text-box">Semester Exam</button>
+			<button type="button" class="text-box">Course Exit Survey</button>
+		</div>
+	</section>
+
+	<section class="actions-panel">
+		<div class="actions-row">
 			<div class="calculate-controls">
 				<select aria-label="Calculate options">
 					<option value="" selected disabled>Select option</option>
@@ -66,73 +68,8 @@
 			</div>
 
 			<div class="print-controls">
-				<select aria-label="Print options">
-					<option value="" selected disabled>Select option</option>
-					<option value="current-page">Print current page</option>
-					<option value="all-pages">Print all Pages</option>
-				</select>
-                <button type="button" class="print-button">Print</button>
+				<button type="button" class="print-button">Print</button>
 			</div>
-		</div>
-	</section>
-
-	<section class="display-box">
-		<h2>Placeholder marks displayed temporarily</h2>
-		<div class="table-wrap">
-			<table>
-				<thead>
-					<tr>
-						<th>Name</th>
-						<th>Q1</th>
-						<th>Q2</th>
-						<th>Q3</th>
-						<th>Q4</th>
-						<th>Total</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>Aryan Shaikh</td>
-						<td>1</td>
-						<td>2</td>
-						<td>3</td>
-						<td>5</td>
-						<td>12</td>
-					</tr>
-					<tr>
-						<td>Neha Pednekar</td>
-						<td>1</td>
-						<td>5</td>
-						<td>5</td>
-						<td>2</td>
-						<td>15</td>
-					</tr>
-					<tr>
-						<td>Rahul Patil</td>
-						<td>3</td>
-						<td>5</td>
-						<td>5</td>
-						<td>6</td>
-						<td>19</td>
-					</tr>
-					<tr>
-						<td>Priya Deshpande</td>
-						<td>1</td>
-						<td>5</td>
-						<td>5</td>
-						<td>4</td>
-						<td>17</td>
-					</tr>
-					<tr>
-						<td>Vikram Sawant</td>
-						<td>5</td>
-						<td>2</td>
-						<td>5</td>
-						<td>5</td>
-						<td>18</td>
-					</tr>
-				</tbody>
-			</table>
 		</div>
 	</section>
 </main>
@@ -188,6 +125,39 @@
 		color: var(--text-100);
 	}
 
+	.title-row {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.logout-button {
+		margin-left: auto;
+		padding: 0.62rem 1rem;
+		border: 0;
+		border-radius: 0.6rem;
+		background: #c62828;
+		color: #ffffff;
+		font-family: 'Funnel Display', 'Segoe UI', sans-serif;
+		font-size: 0.95rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease,
+			background-color 0.2s ease;
+	}
+
+	.logout-button:hover {
+		background: #e53935;
+		box-shadow: 0 10px 20px rgba(198, 40, 40, 0.3);
+		transform: translateY(-1px);
+	}
+
+	.logout-button:active {
+		transform: translateY(0);
+	}
+
 	.controls-row {
 		display: flex;
 		align-items: center;
@@ -218,61 +188,33 @@
 		transform: translateY(-1px);
 	}
 
-	.import-button {
-		margin-top: 0.6rem;
-		padding: 0.72rem 1.1rem;
-		border: 0;
-		border-radius: 0.6rem;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		background: #1e8e3e;
-		color: #f4fff8;
-		font-family: 'Funnel Display', 'Segoe UI', sans-serif;
-		font-size: 0.95rem;
-		font-weight: 600;
-		letter-spacing: 0.02em;
-		cursor: pointer;
-		transition:
-			transform 0.2s ease,
-			box-shadow 0.2s ease,
-			background-color 0.2s ease;
-	}
-
-	.import-button:hover {
-		background: #24a148;
-		box-shadow: 0 10px 20px rgba(23, 107, 49, 0.35);
-		transform: translateY(-1px);
-	}
-
-	.import-button:active {
-		transform: translateY(0);
-	}
-
 	.actions-row {
-		margin-top: 0.6rem;
-		display: grid;
-		grid-template-columns: 1fr auto 1fr;
+		display: flex;
 		align-items: center;
+		justify-content: center;
+		flex-wrap: wrap;
 		gap: 1rem;
 	}
 
-	.import-button {
-		justify-self: start;
+	.actions-panel {
+		width: min(100rem, 100%);
+		padding: 1rem 1.3rem;
+		border-radius: 1.1rem;
+		background: linear-gradient(165deg, rgba(9, 19, 38, 0.88), rgba(7, 13, 28, 0.95));
+		border: 1px solid rgba(79, 115, 189, 0.35);
+		box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
 	}
 
 	.calculate-controls {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.6rem;
-		justify-self: center;
 	}
 
 	.print-controls {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.6rem;
-		justify-self: end;
 	}
 
 	.print-button {
@@ -329,11 +271,6 @@
 		transform: translateY(0);
 	}
 
-	.material-symbols-outlined {
-		font-size: 1.1rem;
-		line-height: 1;
-	}
-
 	.display-box {
 		width: min(100rem, 100%);
 		padding: 1.3rem;
@@ -343,39 +280,35 @@
 		box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
 	}
 
-	h2 {
+	.display-title {
 		margin: 0 0 0.9rem;
 		font-size: 1.1rem;
 		font-weight: 600;
+		letter-spacing: 0.01em;
 		color: var(--text-100);
 	}
 
-	.table-wrap {
-		overflow-x: auto;
+	.text-boxes {
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: 1rem;
 	}
 
-	table {
+	.text-box {
+		min-height: 10rem;
+		display: grid;
+		place-items: center;
 		width: 100%;
-		border-collapse: collapse;
-		min-width: 38rem;
-	}
-
-	th,
-	td {
-		padding: 0.7rem 0.8rem;
-		text-align: left;
-		border-bottom: 1px solid rgba(157, 180, 230, 0.2);
-		font-size: 0.93rem;
-	}
-
-	th {
-		color: #dbe7ff;
+		padding: 0;
+		border-radius: 0.9rem;
+		border: 1px solid rgba(157, 180, 230, 0.28);
+		background: linear-gradient(170deg, rgba(17, 34, 68, 0.86), rgba(11, 21, 44, 0.95));
+		color: var(--text-100);
+		font-family: 'Funnel Display', 'Segoe UI', sans-serif;
+		font-size: 1.05rem;
 		font-weight: 600;
-		background: rgba(14, 29, 60, 0.55);
-	}
-
-	td {
-		color: var(--text-200);
+		letter-spacing: 0.02em;
+		cursor: pointer;
 	}
 
 	@media (max-width: 760px) {
@@ -393,11 +326,14 @@
 		}
 
 		.actions-row {
-			grid-template-columns: 1fr;
-			align-items: stretch;
+			justify-content: center;
+			align-items: center;
 		}
 
-		.import-button,
+		.text-boxes {
+			grid-template-columns: 1fr;
+		}
+
 		.calculate-controls,
 		.print-controls {
 			justify-self: start;
