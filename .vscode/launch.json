@@ -2,6 +2,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "OopsBackendApplication",
+            "request": "launch",
+            "mainClass": "com.proj1.oops_backend.login.OopsBackendApplication",
+            "projectName": "oops_backend"
+        },
+        {
+            "type": "java",
             "name": "Spring Boot-OopsBackendApplication<oops_backend>",
             "request": "launch",
             "cwd": "${workspaceFolder}",

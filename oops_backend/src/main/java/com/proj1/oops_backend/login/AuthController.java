@@ -22,7 +22,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public Map<String, Object> login(@RequestBody LoginRequest req) {
-        String sql = "SELECT COUNT(*) FROM users WHERE username = ? AND password = ?";
+        String sql = "SELECT COUNT(*) FROM \"Faculty\" WHERE username = ? AND password = ?";
 
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, req.username(), req.password());
         boolean success = count != null && count > 0;

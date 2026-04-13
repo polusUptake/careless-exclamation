@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+
 	const uploadEndpoint = 'http://localhost:8080/upload';
 
 	const uploadBoxes = [
@@ -9,58 +11,66 @@
 		{ key: 'survey', label: 'Course Exit Survey' }
 	];
 
-	let fileInput: HTMLInputElement;
-	let selectedBoxKey = '';
-	let uploadSuccessByBox: Record<string, boolean> = {};
-
 	function handleLogout() {
 		window.location.href = '/login';
 	}
 
-	function openFilePicker(boxKey: string) {
-		selectedBoxKey = boxKey;
-		fileInput?.click();
-	}
+	onMount(() => {
+		const inputs = document.querySelectorAll<HTMLInputElement>('.upload-file-input');
+		const tiles = document.querySelectorAll<HTMLElement>('.upload-tile');
 
-	async function handleFileChange(event: Event) {
-		const target = event.target as HTMLInputElement;
-		const file = target.files?.[0];
+		tiles.forEach((tile) => {
+			tile.addEventListener('click', () => {
+				const boxKey = tile.dataset.boxKey;
+				if (!boxKey) {
+					return;
+				}
 
-		if (!file || !selectedBoxKey) {
-			return;
-		}
-
-		const formData = new FormData();
-		formData.append('file', file);
-
-		try {
-			const response = await fetch(uploadEndpoint, {
-				method: 'POST',
-				body: formData
+				const input = document.querySelector<HTMLInputElement>(`.upload-file-input[data-box-key="${boxKey}"]`);
+				input?.click();
 			});
+		});
 
-			if (response.ok) {
-				uploadSuccessByBox = {
-					...uploadSuccessByBox,
-					[selectedBoxKey]: true
-				};
-			} else {
-				uploadSuccessByBox = {
-					...uploadSuccessByBox,
-					[selectedBoxKey]: false
-				};
-				alert('File upload failed.');
-			}
-		} catch (error) {
-			uploadSuccessByBox = {
-				...uploadSuccessByBox,
-				[selectedBoxKey]: false
-			};
-			alert('File upload failed.');
-		}
+		inputs.forEach((input) => {
+			input.addEventListener('change', async () => {
+				const boxKey = input.dataset.boxKey;
+				if (!boxKey) {
+					return;
+				}
 
-		target.value = '';
-	}
+				const tile = document.querySelector<HTMLElement>(`.upload-tile[data-box-key="${boxKey}"]`);
+				const file = input.files && input.files.length > 0 ? input.files[0] : null;
+
+				if (!file) {
+					return;
+				}
+
+				const formData = new FormData();
+				formData.append('file', file);
+				formData.append('folder', boxKey);
+
+				try {
+					const response = await fetch(uploadEndpoint, {
+						method: 'POST',
+						body: formData
+					});
+					const responseText = await response.text();
+
+					if (response.ok) {
+						tile?.classList.add('uploaded');
+					} else {
+						tile?.classList.remove('uploaded');
+						alert(responseText || 'File upload failed.');
+					}
+				} catch {
+					tile?.classList.remove('uploaded');
+					alert('File upload failed.');
+				}
+
+				input.value = '';
+			});
+		});
+	});
 
 	
 
@@ -80,7 +90,7 @@
 	<section class="card">
 		<div class="title-row">
 			<h1 id="dash-title">Create Course File</h1>
-			<button type="button" class="logout-button" on:click={handleLogout}>Log Out</button>
+			<button type="button" class="logout-button" onclick={handleLogout}>Log Out</button>
 		</div>
 
 		<div class="controls-row" role="group">
@@ -109,17 +119,18 @@
 
 	<section class="display-box">
 		<h1 class="display-title">Import files</h1>
-		<input bind:this={fileInput} type="file" class="hidden-file-input" on:change={handleFileChange} />
 		<div class="text-boxes">
 			{#each uploadBoxes as box}
-				<button
-					type="button"
-					class="text-box"
-					class:is-uploaded={uploadSuccessByBox[box.key]}
-					on:click={() => openFilePicker(box.key)}
-				>
-					{box.label}
-				</button>
+				<div class="upload-tile" data-box-key={box.key}>
+					<p class="box-label">
+						{box.label}
+					</p>
+					<input
+						type="file"
+						class="upload-file-input"
+						data-box-key={box.key}
+					/>
+				</div>
 			{/each}
 		</div>
 	</section>
@@ -358,44 +369,44 @@
 
 	.text-boxes {
 		display: grid;
-		grid-template-columns: repeat(5, minmax(0, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 		gap: 1rem;
 	}
 
-	.text-box {
+	.upload-tile {
 		min-height: 10rem;
-		display: grid;
-		place-items: center;
 		width: 100%;
-		padding: 0;
+		box-sizing: border-box;
+		padding: 0.9rem;
 		border-radius: 0.9rem;
 		border: 1px solid rgba(157, 180, 230, 0.28);
 		background: linear-gradient(170deg, rgba(17, 34, 68, 0.86), rgba(11, 21, 44, 0.95));
-		color: var(--text-100);
-		font-family: 'Funnel Display', 'Segoe UI', sans-serif;
-		font-size: 1.05rem;
-		font-weight: 600;
-		letter-spacing: 0.02em;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		gap: 0.55rem;
 		cursor: pointer;
-		transition:
-			transform 0.2s ease,
-			box-shadow 0.2s ease,
-			background-color 0.2s ease,
-			border-color 0.2s ease;
+		transition: background-color 0.2s ease, border-color 0.2s ease;
 	}
 
-	.text-box:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 10px 20px rgba(16, 35, 74, 0.3);
+	:global(.upload-tile.uploaded) {
+		background: linear-gradient(170deg, rgba(22, 163, 74, 0.95), rgba(21, 128, 61, 0.95));
+		border-color: rgba(134, 239, 172, 0.85);
 	}
 
-	.text-box.is-uploaded {
-		background: linear-gradient(170deg, rgba(22, 106, 41, 0.9), rgba(16, 78, 34, 0.95));
-		border-color: rgba(96, 230, 133, 0.72);
-		box-shadow: inset 0 0 0 1px rgba(123, 243, 155, 0.3);
+	.box-label {
+		margin: 0;
+		font-family: 'Funnel Display', 'Segoe UI', sans-serif;
+		font-size: 1rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		color: var(--text-100);
+		text-align: center;
+		transition: color 0.2s ease;
 	}
 
-	.hidden-file-input {
+	.upload-file-input {
 		display: none;
 	}
 
