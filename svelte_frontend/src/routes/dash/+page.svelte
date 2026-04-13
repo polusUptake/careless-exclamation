@@ -1,7 +1,69 @@
 <script lang="ts">
+	const uploadEndpoint = 'http://localhost:8080/upload';
+
+	const uploadBoxes = [
+		{ key: 'it1', label: 'Internal Test 1' },
+		{ key: 'it2', label: 'Internal Test 2' },
+		{ key: 'it3', label: 'Internal Test 3' },
+		{ key: 'semester', label: 'Semester Exam' },
+		{ key: 'survey', label: 'Course Exit Survey' }
+	];
+
+	let fileInput: HTMLInputElement;
+	let selectedBoxKey = '';
+	let uploadSuccessByBox: Record<string, boolean> = {};
+
 	function handleLogout() {
 		window.location.href = '/login';
 	}
+
+	function openFilePicker(boxKey: string) {
+		selectedBoxKey = boxKey;
+		fileInput?.click();
+	}
+
+	async function handleFileChange(event: Event) {
+		const target = event.target as HTMLInputElement;
+		const file = target.files?.[0];
+
+		if (!file || !selectedBoxKey) {
+			return;
+		}
+
+		const formData = new FormData();
+		formData.append('file', file);
+
+		try {
+			const response = await fetch(uploadEndpoint, {
+				method: 'POST',
+				body: formData
+			});
+
+			if (response.ok) {
+				uploadSuccessByBox = {
+					...uploadSuccessByBox,
+					[selectedBoxKey]: true
+				};
+			} else {
+				uploadSuccessByBox = {
+					...uploadSuccessByBox,
+					[selectedBoxKey]: false
+				};
+				alert('File upload failed.');
+			}
+		} catch (error) {
+			uploadSuccessByBox = {
+				...uploadSuccessByBox,
+				[selectedBoxKey]: false
+			};
+			alert('File upload failed.');
+		}
+
+		target.value = '';
+	}
+
+	
+
 </script>
 
 <svelte:head>
@@ -47,12 +109,18 @@
 
 	<section class="display-box">
 		<h1 class="display-title">Import files</h1>
+		<input bind:this={fileInput} type="file" class="hidden-file-input" on:change={handleFileChange} />
 		<div class="text-boxes">
-			<button type="button" class="text-box">Internal Test 1</button>
-			<button type="button" class="text-box">Internal Test 2</button>
-			<button type="button" class="text-box">Internal Test 3</button>
-			<button type="button" class="text-box">Semester Exam</button>
-			<button type="button" class="text-box">Course Exit Survey</button>
+			{#each uploadBoxes as box}
+				<button
+					type="button"
+					class="text-box"
+					class:is-uploaded={uploadSuccessByBox[box.key]}
+					on:click={() => openFilePicker(box.key)}
+				>
+					{box.label}
+				</button>
+			{/each}
 		</div>
 	</section>
 
@@ -309,6 +377,26 @@
 		font-weight: 600;
 		letter-spacing: 0.02em;
 		cursor: pointer;
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease,
+			background-color 0.2s ease,
+			border-color 0.2s ease;
+	}
+
+	.text-box:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 10px 20px rgba(16, 35, 74, 0.3);
+	}
+
+	.text-box.is-uploaded {
+		background: linear-gradient(170deg, rgba(22, 106, 41, 0.9), rgba(16, 78, 34, 0.95));
+		border-color: rgba(96, 230, 133, 0.72);
+		box-shadow: inset 0 0 0 1px rgba(123, 243, 155, 0.3);
+	}
+
+	.hidden-file-input {
+		display: none;
 	}
 
 	@media (max-width: 760px) {
