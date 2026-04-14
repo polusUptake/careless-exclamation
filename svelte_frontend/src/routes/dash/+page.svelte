@@ -1,76 +1,57 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-
 	const uploadEndpoint = 'http://localhost:8080/upload';
 
-	const uploadBoxes = [
-		{ key: 'it1', label: 'Internal Test 1' },
-		{ key: 'it2', label: 'Internal Test 2' },
-		{ key: 'it3', label: 'Internal Test 3' },
-		{ key: 'semester', label: 'Semester Exam' },
-		{ key: 'survey', label: 'Course Exit Survey' }
-	];
+	let importInput = $state<HTMLInputElement>();
+	let uploadSucceeded = $state(false);
+	let uploadStatus = $state('No file uploaded yet.');
 
 	function handleLogout() {
 		window.location.href = '/login';
 	}
 
-	onMount(() => {
-		const inputs = document.querySelectorAll<HTMLInputElement>('.upload-file-input');
-		const tiles = document.querySelectorAll<HTMLElement>('.upload-tile');
+	function triggerImport() {
+		importInput?.click();
+	}
 
-		tiles.forEach((tile) => {
-			tile.addEventListener('click', () => {
-				const boxKey = tile.dataset.boxKey;
-				if (!boxKey) {
-					return;
-				}
+	async function handleImportChange(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files && input.files.length > 0 ? input.files[0] : null;
 
-				const input = document.querySelector<HTMLInputElement>(`.upload-file-input[data-box-key="${boxKey}"]`);
-				input?.click();
+		if (!file) {
+			uploadStatus = 'No file selected.';
+			uploadSucceeded = false;
+			return;
+		}
+
+		uploadSucceeded = false;
+		uploadStatus = `Uploading ${file.name}...`;
+
+		const formData = new FormData();
+		formData.append('file', file);
+
+		try {
+			const response = await fetch(uploadEndpoint, {
+				method: 'POST',
+				body: formData
 			});
-		});
+			const responseText = await response.text();
 
-		inputs.forEach((input) => {
-			input.addEventListener('change', async () => {
-				const boxKey = input.dataset.boxKey;
-				if (!boxKey) {
-					return;
-				}
+			if (response.ok) {
+				uploadSucceeded = true;
+				uploadStatus = 'File upload successful.';
+			} else {
+				uploadSucceeded = false;
+				uploadStatus = 'File upload failed.';
+				alert(responseText || 'File upload failed.');
+			}
+		} catch {
+			uploadSucceeded = false;
+			uploadStatus = 'File upload failed.';
+			alert('File upload failed.');
+		}
 
-				const tile = document.querySelector<HTMLElement>(`.upload-tile[data-box-key="${boxKey}"]`);
-				const file = input.files && input.files.length > 0 ? input.files[0] : null;
-
-				if (!file) {
-					return;
-				}
-
-				const formData = new FormData();
-				formData.append('file', file);
-				formData.append('folder', boxKey);
-
-				try {
-					const response = await fetch(uploadEndpoint, {
-						method: 'POST',
-						body: formData
-					});
-					const responseText = await response.text();
-
-					if (response.ok) {
-						tile?.classList.add('uploaded');
-					} else {
-						tile?.classList.remove('uploaded');
-						alert(responseText || 'File upload failed.');
-					}
-				} catch {
-					tile?.classList.remove('uploaded');
-					alert('File upload failed.');
-				}
-
-				input.value = '';
-			});
-		});
-	});
+		input.value = '';
+	}
 
 	
 
@@ -119,19 +100,17 @@
 
 	<section class="display-box">
 		<h1 class="display-title">Import files</h1>
-		<div class="text-boxes">
-			{#each uploadBoxes as box}
-				<div class="upload-tile" data-box-key={box.key}>
-					<p class="box-label">
-						{box.label}
-					</p>
-					<input
-						type="file"
-						class="upload-file-input"
-						data-box-key={box.key}
-					/>
-				</div>
-			{/each}
+		<div class="import-wrapper">
+			<button
+				type="button"
+				class="upload-tile import-button"
+				class:uploaded={uploadSucceeded}
+				onclick={triggerImport}
+			>
+				Import Files
+			</button>
+			<input type="file" class="upload-file-input" bind:this={importInput} onchange={handleImportChange} />
+			<p class="upload-status">{uploadStatus}</p>
 		</div>
 	</section>
 
@@ -367,47 +346,46 @@
 		color: var(--text-100);
 	}
 
-	.text-boxes {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-		gap: 1rem;
+	.import-wrapper {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.7rem;
 	}
 
 	.upload-tile {
-		min-height: 10rem;
-		width: 100%;
+		min-height: 4rem;
+		width: min(18rem, 100%);
 		box-sizing: border-box;
-		padding: 0.9rem;
+		padding: 0.9rem 1.2rem;
 		border-radius: 0.9rem;
 		border: 1px solid rgba(157, 180, 230, 0.28);
 		background: linear-gradient(170deg, rgba(17, 34, 68, 0.86), rgba(11, 21, 44, 0.95));
 		display: flex;
-		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		gap: 0.55rem;
+		font-family: 'Funnel Display', 'Segoe UI', sans-serif;
+		font-size: 1.05rem;
+		font-weight: 700;
+		color: var(--text-100);
 		cursor: pointer;
 		transition: background-color 0.2s ease, border-color 0.2s ease;
 	}
 
-	:global(.upload-tile.uploaded) {
+	:global(.import-button.uploaded) {
 		background: linear-gradient(170deg, rgba(22, 163, 74, 0.95), rgba(21, 128, 61, 0.95));
 		border-color: rgba(134, 239, 172, 0.85);
 	}
 
-	.box-label {
-		margin: 0;
-		font-family: 'Funnel Display', 'Segoe UI', sans-serif;
-		font-size: 1rem;
-		font-weight: 700;
-		letter-spacing: 0.02em;
-		color: var(--text-100);
-		text-align: center;
-		transition: color 0.2s ease;
-	}
-
 	.upload-file-input {
 		display: none;
+	}
+
+	.upload-status {
+		margin: 0;
+		font-size: 0.92rem;
+		color: var(--text-200);
+		text-align: center;
 	}
 
 	@media (max-width: 760px) {
@@ -427,10 +405,6 @@
 		.actions-row {
 			justify-content: center;
 			align-items: center;
-		}
-
-		.text-boxes {
-			grid-template-columns: 1fr;
 		}
 
 		.calculate-controls,
