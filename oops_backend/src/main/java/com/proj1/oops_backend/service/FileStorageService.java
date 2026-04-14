@@ -11,19 +11,18 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class FileStorageService {
 
-	public Path store(MultipartFile file, String folder) throws IOException {
+	public Path store(MultipartFile file) throws IOException {
 		if (file == null || file.isEmpty()) {
 			throw new IllegalArgumentException("File is empty.");
 		}
 
-		String safeFolder = sanitizeFolder(folder);
 		String original = file.getOriginalFilename();
 		if (original == null || original.isBlank()) {
 			throw new IllegalArgumentException("Invalid filename.");
 		}
 
 		String safeFileName = Path.of(original).getFileName().toString();
-		Path uploadDir = Path.of("uploads", safeFolder);
+		Path uploadDir = Path.of("uploads");
 		Files.createDirectories(uploadDir);
 
 		Path target = uploadDir.resolve(safeFileName);
@@ -31,13 +30,5 @@ public class FileStorageService {
 			Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
 		}
 		return target;
-	}
-
-	public String sanitizeFolder(String folder) {
-		if (folder == null || folder.isBlank()) {
-			return "general";
-		}
-		String cleaned = folder.replaceAll("[^a-zA-Z0-9_-]", "");
-		return cleaned.isBlank() ? "general" : cleaned;
 	}
 }
