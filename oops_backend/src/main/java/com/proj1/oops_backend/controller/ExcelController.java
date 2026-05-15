@@ -4,9 +4,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import com.proj1.oops_backend.model.RawRow;
+import com.proj1.oops_backend.model.CalculationResult;
 import com.proj1.oops_backend.model.Report;
+import com.proj1.oops_backend.model.WorkbookInput;
 import com.proj1.oops_backend.repository.ReportRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
@@ -44,6 +46,7 @@ public class ExcelController {
     }
 
     @PostMapping("/upload")
+    @Transactional
     public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Upload failed: file is empty.");
@@ -51,16 +54,23 @@ public class ExcelController {
 
         try {
             Path targetFile = fileStorageService.store(file);
-            List<RawRow> rawRows = excelReaderService.readExcel(targetFile);
-            List<Report> calculatedReports = calculationService.calculate(rawRows, targetFile.getFileName().toString());
+            WorkbookInput workbookInput = excelReaderService.readExcel(targetFile);
+            CalculationResult calculationResult = calculationService.calculate(workbookInput);
+            List<Report> calculatedReports = calculationService.toReports(
+                calculationResult,
+                targetFile.getFileName().toString());
+
+                // Keep only the latest upload's calculated rows while preserving the report table itself.
+                reportRepository.deleteAllInBatch();
             List<Report> savedReports = reportRepository.saveAll(calculatedReports);
-            Path exportPath = excelExportService.export(savedReports);
+            Path exportPath = excelExportService.export(calculationResult, workbookInput);
             String downloadPath = "/download/" + exportPath.getFileName();
 
             return ResponseEntity.ok(Map.of(
                     "message", "File processed successfully.",
                     "uploadedFile", targetFile.getFileName().toString(),
-                    "rawRowCount", rawRows.size(),
+                "studentCount", calculationResult.studentRows().size(),
+                "coCount", calculationResult.coCodes().size(),
                     "savedReportCount", savedReports.size(),
                     "downloadPath", downloadPath,
                     "reports", savedReports));

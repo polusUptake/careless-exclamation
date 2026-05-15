@@ -1,4 +1,9 @@
 <script lang="ts">
+	type CourseOption = {
+		courseId: string;
+		courseName: string;
+	};
+
 	let username = '';
 	let password = '';
 	let errorMessage = '';
@@ -24,6 +29,27 @@
 			const data = await response.json();
 
 			if (data.success) {
+				const courses: CourseOption[] = Array.isArray(data.courses)
+					? data.courses.map((course: unknown) => {
+						if (typeof course === 'object' && course !== null) {
+							const entry = course as Record<string, unknown>;
+							return {
+								courseId: String(entry.courseId ?? ''),
+								courseName: String(entry.courseName ?? '')
+							};
+						}
+						return { courseId: '', courseName: '' };
+					})
+					: [];
+
+				const facultySession = {
+					facultyId: data.facultyId ?? '',
+					facultyName: String(data.facultyName ?? ''),
+					department: String(data.department ?? ''),
+					courses: courses.filter((course) => course.courseName.trim().length > 0)
+				};
+
+				localStorage.setItem('facultySession', JSON.stringify(facultySession));
 				window.location.href = '/dash';
 				return;
 			}

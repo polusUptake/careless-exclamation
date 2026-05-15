@@ -1,16 +1,75 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+
+	type CourseOption = {
+		courseId: string;
+		courseName: string;
+	};
+
 	const uploadEndpoint = 'http://localhost:8080/upload';
 
 	let importInput = $state<HTMLInputElement>();
 	let uploadSucceeded = $state(false);
 	let uploadStatus = $state('No file uploaded yet.');
+	let calculatedDownloadPath = $state('');
+	let facultyName = $state('');
+	let department = $state('');
+	let courseOptions = $state<CourseOption[]>([]);
+	let selectedCourse = $state('');
+
+	onMount(() => {
+		const raw = localStorage.getItem('facultySession');
+		if (!raw) {
+			return;
+		}
+
+		try {
+			const parsed = JSON.parse(raw) as {
+				facultyName?: string;
+				department?: string;
+				courses?: Array<{ courseId?: string; courseName?: string }>;
+			};
+
+			facultyName = parsed.facultyName ?? '';
+			department = parsed.department ?? '';
+			courseOptions = Array.isArray(parsed.courses)
+				? parsed.courses
+						.filter((course) => (course.courseName ?? '').trim().length > 0)
+						.map((course) => ({
+							courseId: String(course.courseId ?? ''),
+							courseName: String(course.courseName ?? '')
+						}))
+				: [];
+		} catch {
+			courseOptions = [];
+		}
+	});
 
 	function handleLogout() {
+		localStorage.removeItem('facultySession');
 		window.location.href = '/login';
 	}
 
 	function triggerImport() {
 		importInput?.click();
+	}
+
+	function handlePrintDownload() {
+		if (!calculatedDownloadPath) {
+			alert('Upload and calculate a file first.');
+			return;
+		}
+
+		const downloadUrl = calculatedDownloadPath.startsWith('http')
+			? calculatedDownloadPath
+			: new URL(calculatedDownloadPath, uploadEndpoint).toString();
+
+		const anchor = document.createElement('a');
+		anchor.href = downloadUrl;
+		anchor.download = '';
+		document.body.appendChild(anchor);
+		anchor.click();
+		document.body.removeChild(anchor);
 	}
 
 	async function handleImportChange(event: Event) {
@@ -24,6 +83,7 @@
 		}
 
 		uploadSucceeded = false;
+		calculatedDownloadPath = '';
 		uploadStatus = `Uploading ${file.name}...`;
 
 		const formData = new FormData();
@@ -34,18 +94,35 @@
 				method: 'POST',
 				body: formData
 			});
-			const responseText = await response.text();
+
+			const contentType = response.headers.get('content-type') ?? '';
+			const isJson = contentType.includes('application/json');
+			const responseBody = isJson ? await response.json() : await response.text();
 
 			if (response.ok) {
+				const downloadPath =
+					typeof responseBody === 'object' && responseBody !== null
+						? String(responseBody.downloadPath ?? '')
+						: '';
+
+				if (!downloadPath) {
+					uploadSucceeded = false;
+					uploadStatus = 'Upload succeeded but no download link was returned.';
+					return;
+				}
+
+				calculatedDownloadPath = downloadPath;
 				uploadSucceeded = true;
-				uploadStatus = 'File upload successful.';
+				uploadStatus = 'File upload successful. Click Print to download calculated file.';
 			} else {
 				uploadSucceeded = false;
+				calculatedDownloadPath = '';
 				uploadStatus = 'File upload failed.';
-				alert(responseText || 'File upload failed.');
+				alert(typeof responseBody === 'string' ? responseBody : 'File upload failed.');
 			}
 		} catch {
 			uploadSucceeded = false;
+			calculatedDownloadPath = '';
 			uploadStatus = 'File upload failed.';
 			alert('File upload failed.');
 		}
@@ -75,24 +152,19 @@
 		</div>
 
 		<div class="controls-row" role="group">
-			<p>Name Of Instructor : Dr. Amrita Naik</p>
-			<p>Dept : Computer Engineering</p>
+			<p>Name Of Instructor : {facultyName || 'N/A'}</p>
+			<p>Dept : {department || 'N/A'}</p>
 
             <p>Course:</p>
-			<select>
-				<option value="" selected disabled>Select option</option>
-				<option value="placeholder-a">Object Oriented Programming Systems</option>
-				<option value="placeholder-b">Data Structures</option>
-				<option value="placeholder-c">C++</option>
-			</select>
-
-            <p>Tool:</p>
-			<select>
-				<option value="" selected disabled>Select option</option>
-                <option value="placeholder-d">Assignment</option>
-				<option value="placeholder-e">Internal Test</option>
-				<option value="placeholder-f">Semester End Exam</option>
-				<option value="placeholder-g">Course Exit Survey</option>
+			<select bind:value={selectedCourse}>
+				<option value="" disabled selected={selectedCourse === ''}>Select option</option>
+				{#if courseOptions.length === 0}
+					<option value="" disabled>No assigned courses found</option>
+				{:else}
+					{#each courseOptions as course}
+						<option value={course.courseId || course.courseName}>{course.courseName}</option>
+					{/each}
+				{/if}
 			</select>
 		</div>
 
@@ -126,7 +198,14 @@
 			</div>
 
 			<div class="print-controls">
-				<button type="button" class="print-button">Print</button>
+				<button
+					type="button"
+					class="print-button"
+					onclick={handlePrintDownload}
+					disabled={!calculatedDownloadPath}
+				>
+					Print
+				</button>
 			</div>
 		</div>
 	</section>
@@ -300,6 +379,13 @@
 
 	.print-button:active {
 		transform: translateY(0);
+	}
+
+	.print-button:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
+		box-shadow: none;
+		transform: none;
 	}
 
 	.calculate-button {
