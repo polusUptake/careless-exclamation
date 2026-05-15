@@ -26,7 +26,7 @@ public class ExcelExportService {
 
     private static final List<String> ACADEMIC_SHEET_ORDER = List.of("it1", "it2", "it3", "sem");
 
-    public Path export(CalculationResult result, WorkbookInput workbookInput) throws IOException {
+    public Path export(CalculationResult result, WorkbookInput workbookInput, String facultyName, String courseName) throws IOException {
         Path exportDir = Path.of("uploads");
         Files.createDirectories(exportDir);
 
@@ -35,12 +35,12 @@ public class ExcelExportService {
 
         try (Workbook workbook = new XSSFWorkbook();
              OutputStream outputStream = Files.newOutputStream(exportFile)) {
-            writeStudentPerformanceSheet(workbook, result, workbookInput);
-            writeCesSummarySheet(workbook, result);
-            writeFinalAttainmentSheet(workbook, result);
+            writeStudentPerformanceSheet(workbook, result, workbookInput, facultyName, courseName);
+            writeCesSummarySheet(workbook, result, facultyName, courseName);
+            writeFinalAttainmentSheet(workbook, result, facultyName, courseName);
             
             // Generate the 4th sheet for PO Attainment
-            writePoAttainmentSheet(workbook, result);
+            writePoAttainmentSheet(workbook, result, facultyName, courseName);
             
             workbook.write(outputStream);
         }
@@ -48,28 +48,26 @@ public class ExcelExportService {
         return exportFile;
     }
 
-    private void writeStudentPerformanceSheet(Workbook workbook, CalculationResult result, WorkbookInput input) {
+    private void writeStudentPerformanceSheet(
+            Workbook workbook,
+            CalculationResult result,
+            WorkbookInput input,
+            String facultyName,
+            String courseName) {
         Sheet sheet = workbook.createSheet("Student Performance");
         
         CellStyle headerStyle = createHeaderStyle(workbook);
         CellStyle dataStyle = createDataStyle(workbook);
 
-        int rowIndex = 0;
+        int rowIndex = writeSheetMetadata(sheet, facultyName, courseName, headerStyle, dataStyle);
         
-        Row row0 = sheet.createRow(rowIndex++); 
-        Row row1 = sheet.createRow(rowIndex++); 
-        Row row2 = sheet.createRow(rowIndex++); 
-        Row row3 = sheet.createRow(rowIndex++); 
+        Row row0 = sheet.createRow(rowIndex++);
+        Row row1 = sheet.createRow(rowIndex++);
+        Row row2 = sheet.createRow(rowIndex++);
+        Row row3 = sheet.createRow(rowIndex++);
 
-        for (int r = 0; r < 3; r++) {
-            Row row = sheet.getRow(r);
-            for (int c = 0; c < 3; c++) {
-                createStyledCell(row, c, "", headerStyle);
-            }
-        }
-
-        sheet.getRow(1).getCell(2).setCellValue("Marks");
-        sheet.getRow(2).getCell(2).setCellValue("CO");
+        createStyledCell(row1, 2, "Marks", headerStyle);
+        createStyledCell(row2, 2, "CO", headerStyle);
 
         int col = 0;
         createStyledCell(row3, col++, "SrNo", headerStyle);
@@ -97,8 +95,8 @@ public class ExcelExportService {
             createStyledCell(row2, col, "", headerStyle); 
             createStyledCell(row3, col, "Total", headerStyle);
             
-            sheet.getRow(0).getCell(startCol).setCellValue(sheetName.toUpperCase() + " MARKS");
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, startCol, col));
+            createStyledCell(row0, startCol, sheetName.toUpperCase() + " MARKS", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(row0.getRowNum(), row0.getRowNum(), startCol, col));
             col++;
         }
 
@@ -110,9 +108,9 @@ public class ExcelExportService {
             createStyledCell(row3, col, q.questionId(), headerStyle); 
             col++;
         }
-        sheet.getRow(0).getCell(cesStart).setCellValue("CES RESPONSES");
+        createStyledCell(row0, cesStart, "CES RESPONSES", headerStyle);
         if (cesStart < col - 1) {
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, cesStart, col - 1));
+            sheet.addMergedRegion(new CellRangeAddress(row0.getRowNum(), row0.getRowNum(), cesStart, col - 1));
         }
 
         int coTotalStart = col;
@@ -123,9 +121,9 @@ public class ExcelExportService {
             createStyledCell(row3, col, co, headerStyle);
             col++;
         }
-        sheet.getRow(0).getCell(coTotalStart).setCellValue("CO TOTALS");
+        createStyledCell(row0, coTotalStart, "CO TOTALS", headerStyle);
         if (coTotalStart < col - 1) {
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, coTotalStart, col - 1));
+            sheet.addMergedRegion(new CellRangeAddress(row0.getRowNum(), row0.getRowNum(), coTotalStart, col - 1));
         }
 
         int coAttainStart = col;
@@ -136,9 +134,9 @@ public class ExcelExportService {
             createStyledCell(row3, col, co, headerStyle);
             col++;
         }
-        sheet.getRow(0).getCell(coAttainStart).setCellValue("CO ATTAINMENT (0/1)");
+        createStyledCell(row0, coAttainStart, "CO ATTAINMENT (0/1)", headerStyle);
         if (coAttainStart < col - 1) {
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, coAttainStart, col - 1));
+            sheet.addMergedRegion(new CellRangeAddress(row0.getRowNum(), row0.getRowNum(), coAttainStart, col - 1));
         }
 
         int srNo = 1;
@@ -182,11 +180,11 @@ public class ExcelExportService {
         autoSizeColumns(sheet, Math.max(col, 5));
     }
 
-    private void writeCesSummarySheet(Workbook workbook, CalculationResult result) {
+    private void writeCesSummarySheet(Workbook workbook, CalculationResult result, String facultyName, String courseName) {
         Sheet sheet = workbook.createSheet("CES Summary");
         CellStyle headerStyle = createHeaderStyle(workbook);
         CellStyle dataStyle = createDataStyle(workbook);
-        int rowIndex = 0;
+        int rowIndex = writeSheetMetadata(sheet, facultyName, courseName, headerStyle, dataStyle);
 
         Row header = sheet.createRow(rowIndex++);
         createStyledCell(header, 0, "CO", headerStyle);
@@ -207,11 +205,11 @@ public class ExcelExportService {
         autoSizeColumns(sheet, 5);
     }
 
-    private void writeFinalAttainmentSheet(Workbook workbook, CalculationResult result) {
+    private void writeFinalAttainmentSheet(Workbook workbook, CalculationResult result, String facultyName, String courseName) {
         Sheet sheet = workbook.createSheet("Final CO Attainment");
         CellStyle headerStyle = createHeaderStyle(workbook);
         CellStyle dataStyle = createDataStyle(workbook);
-        int rowIndex = 0;
+        int rowIndex = writeSheetMetadata(sheet, facultyName, courseName, headerStyle, dataStyle);
 
         Row topHeader = sheet.createRow(rowIndex++);
         createStyledCell(topHeader, 0, "CO", headerStyle);
@@ -241,12 +239,12 @@ public class ExcelExportService {
         autoSizeColumns(sheet, 7);
     }
 
-    private void writePoAttainmentSheet(Workbook workbook, CalculationResult result) {
+    private void writePoAttainmentSheet(Workbook workbook, CalculationResult result, String facultyName, String courseName) {
         Sheet sheet = workbook.createSheet("PO Attainment");
         CellStyle headerStyle = createHeaderStyle(workbook);
         CellStyle dataStyle = createDataStyle(workbook);
 
-        int rowIndex = 0;
+        int rowIndex = writeSheetMetadata(sheet, facultyName, courseName, headerStyle, dataStyle);
 
         Row headerRow = sheet.createRow(rowIndex++);
         createStyledCell(headerRow, 0, "CO Code", headerStyle);
@@ -381,6 +379,25 @@ public class ExcelExportService {
     private void createStyledCell(Row row, int column, int value, CellStyle style) {
         row.createCell(column).setCellValue(value);
         row.getCell(column).setCellStyle(style);
+    }
+
+    private int writeSheetMetadata(Sheet sheet, String facultyName, String courseName, CellStyle labelStyle, CellStyle valueStyle) {
+        Row nameRow = sheet.createRow(0);
+        createStyledCell(nameRow, 0, "Name of the Instructor:", labelStyle);
+        createStyledCell(nameRow, 1, normalizeMetadataValue(facultyName), valueStyle);
+
+        sheet.createRow(1);
+
+        Row courseRow = sheet.createRow(2);
+        createStyledCell(courseRow, 0, "Course name:", labelStyle);
+        createStyledCell(courseRow, 1, normalizeMetadataValue(courseName), valueStyle);
+
+        sheet.createRow(3);
+        return 4;
+    }
+
+    private String normalizeMetadataValue(String value) {
+        return value == null || value.isBlank() ? "N/A" : value.trim();
     }
 
     private void autoSizeColumns(Sheet sheet, int count) {

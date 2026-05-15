@@ -17,6 +17,20 @@
 	let courseOptions = $state<CourseOption[]>([]);
 	let selectedCourse = $state('');
 
+	function getSelectedCourseName() {
+		if (!selectedCourse) {
+			return '';
+		}
+
+		return courseOptions.find((course) => course.courseName === selectedCourse)?.courseName ?? '';
+	}
+
+	function handleCourseChange() {
+		calculatedDownloadPath = '';
+		uploadSucceeded = false;
+		uploadStatus = 'No file uploaded yet.';
+	}
+
 	onMount(() => {
 		const raw = localStorage.getItem('facultySession');
 		if (!raw) {
@@ -60,6 +74,11 @@
 			return;
 		}
 
+		if (!selectedCourse) {
+			alert('Please select a course before clicking Print.');
+			return;
+		}
+
 		const downloadUrl = calculatedDownloadPath.startsWith('http')
 			? calculatedDownloadPath
 			: new URL(calculatedDownloadPath, uploadEndpoint).toString();
@@ -82,12 +101,22 @@
 			return;
 		}
 
+		const courseName = getSelectedCourseName();
+		if (!courseName) {
+			uploadStatus = 'Select a course before uploading the file.';
+			uploadSucceeded = false;
+			alert('Please select a course before uploading the file.');
+			return;
+		}
+
 		uploadSucceeded = false;
 		calculatedDownloadPath = '';
 		uploadStatus = `Uploading ${file.name}...`;
 
 		const formData = new FormData();
 		formData.append('file', file);
+		formData.append('facultyName', facultyName);
+		formData.append('courseName', courseName);
 
 		try {
 			const response = await fetch(uploadEndpoint, {
@@ -156,13 +185,13 @@
 			<p>Dept : {department || 'N/A'}</p>
 
             <p>Course:</p>
-			<select bind:value={selectedCourse}>
-				<option value="" disabled selected={selectedCourse === ''}>Select option</option>
-				{#if courseOptions.length === 0}
-					<option value="" disabled>No assigned courses found</option>
-				{:else}
-					{#each courseOptions as course}
-						<option value={course.courseId || course.courseName}>{course.courseName}</option>
+				<select bind:value={selectedCourse} onchange={handleCourseChange}>
+					<option value="" disabled selected={selectedCourse === ''}>Select option</option>
+					{#if courseOptions.length === 0}
+						<option value="" disabled>No assigned courses found</option>
+					{:else}
+						{#each courseOptions as course}
+							<option value={course.courseName}>{course.courseName}</option>
 					{/each}
 				{/if}
 			</select>
@@ -188,15 +217,6 @@
 
 	<section class="actions-panel">
 		<div class="actions-row">
-			<div class="calculate-controls">
-				<select aria-label="Calculate options">
-					<option value="" selected disabled>Select option</option>
-					<option value="calculate-co">Calculate CO</option>
-					<option value="calculate-po">Calculate PO</option>
-				</select>
-				<button type="button" class="calculate-button">Calculate</button>
-			</div>
-
 			<div class="print-controls">
 				<button
 					type="button"
@@ -342,12 +362,6 @@
 		box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
 	}
 
-	.calculate-controls {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.6rem;
-	}
-
 	.print-controls {
 		display: inline-flex;
 		align-items: center;
@@ -386,33 +400,6 @@
 		cursor: not-allowed;
 		box-shadow: none;
 		transform: none;
-	}
-
-	.calculate-button {
-		padding: 0.72rem 1.1rem;
-		border: 0;
-		border-radius: 0.6rem;
-		background: var(--blue-800);
-		color: #eaf1ff;
-		font-family: 'Funnel Display', 'Segoe UI', sans-serif;
-		font-size: 0.95rem;
-		font-weight: 600;
-		letter-spacing: 0.02em;
-		cursor: pointer;
-		transition:
-			transform 0.2s ease,
-			box-shadow 0.2s ease,
-			background-color 0.2s ease;
-	}
-
-	.calculate-button:hover {
-		background: var(--blue-700);
-		box-shadow: 0 10px 20px rgba(20, 41, 90, 0.35);
-		transform: translateY(-1px);
-	}
-
-	.calculate-button:active {
-		transform: translateY(0);
 	}
 
 	.display-box {
@@ -493,13 +480,8 @@
 			align-items: center;
 		}
 
-		.calculate-controls,
 		.print-controls {
 			justify-self: start;
-		}
-
-		.calculate-controls {
-			width: 100%;
 		}
 
 		.print-controls {

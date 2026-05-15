@@ -47,9 +47,19 @@ public class ExcelController {
 
     @PostMapping("/upload")
     @Transactional
-    public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> upload(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "facultyName", required = false) String facultyName,
+            @RequestParam(value = "courseName", required = false) String courseName) {
         if (file.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Upload failed: file is empty.");
+        }
+
+        String resolvedFacultyName = facultyName == null ? "" : facultyName.trim();
+        String resolvedCourseName = courseName == null ? "" : courseName.trim();
+        if (resolvedFacultyName.isBlank() || resolvedCourseName.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Upload failed: faculty name and course name are required.");
         }
 
         try {
@@ -63,7 +73,7 @@ public class ExcelController {
                 // Keep only the latest upload's calculated rows while preserving the report table itself.
                 reportRepository.deleteAllInBatch();
             List<Report> savedReports = reportRepository.saveAll(calculatedReports);
-            Path exportPath = excelExportService.export(calculationResult, workbookInput);
+            Path exportPath = excelExportService.export(calculationResult, workbookInput, resolvedFacultyName, resolvedCourseName);
             String downloadPath = "/download/" + exportPath.getFileName();
 
             return ResponseEntity.ok(Map.of(
